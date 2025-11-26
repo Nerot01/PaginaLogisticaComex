@@ -60,6 +60,24 @@ if ($method === 'GET') {
         ]);
         echo json_encode(['success' => true]);
     }
+} elseif ($method === 'PUT') {
+    checkAuth();
+    $data = json_decode(file_get_contents('php://input'), true);
+
+    if ($type === 'activities') {
+        $sql = "UPDATE activities SET title=?, description=?, date_event=?, location=?, media_url=?, media_type=? WHERE id=?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            $data['title'],
+            $data['description'],
+            $data['date_event'],
+            $data['location'],
+            $data['media_url'],
+            $data['media_type'],
+            $data['id']
+        ]);
+        echo json_encode(['success' => true]);
+    }
 } elseif ($method === 'DELETE') {
     checkAuth();
     $id = $_GET['id'] ?? 0;

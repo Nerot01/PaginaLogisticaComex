@@ -23,8 +23,12 @@
                     type="button">Actividades</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="recursos-tab" data-bs-toggle="tab" data-bs-target="#recursos"
-                    type="button">Biblioteca / Lecturas</button>
+                <button class="nav-link" id="biblioteca-tab" data-bs-toggle="tab" data-bs-target="#biblioteca"
+                    type="button">Biblioteca</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="lecturas-tab" data-bs-toggle="tab" data-bs-target="#lecturas"
+                    type="button">Lecturas</button>
             </li>
         </ul>
 
@@ -34,6 +38,7 @@
                 <div class="card p-4 mb-4">
                     <h5>Nueva Actividad</h5>
                     <form id="actividadForm">
+                        <input type="hidden" id="actId"> <!-- Hidden ID for editing -->
                         <div class="row">
                             <div class="col-md-6 mb-2"><input type="text" class="form-control" id="actTitle"
                                     placeholder="Título" required></div>
@@ -53,7 +58,9 @@
                             <div class="col-12 mb-2"><textarea class="form-control" id="actDesc"
                                     placeholder="Descripción" rows="3" required></textarea></div>
                         </div>
-                        <button type="submit" class="btn btn-success">Guardar Actividad</button>
+                        <button type="submit" class="btn btn-success" id="btnSaveAct">Guardar Actividad</button>
+                        <button type="button" class="btn btn-secondary" id="btnCancelAct" style="display:none;"
+                            onclick="cancelEditAct()">Cancelar Edición</button>
                     </form>
                 </div>
                 <hr>
@@ -61,31 +68,46 @@
                 <div id="actividadesList" class="list-group"></div>
             </div>
 
-            <!-- RECURSOS -->
-            <div class="tab-pane fade" id="recursos">
+            <!-- BIBLIOTECA -->
+            <div class="tab-pane fade" id="biblioteca">
                 <div class="card p-4 mb-4">
-                    <h5>Nuevo Recurso</h5>
-                    <form id="recursoForm">
+                    <h5>Nuevo Libro en Biblioteca</h5>
+                    <form id="bibliotecaForm">
                         <div class="row">
-                            <div class="col-md-6 mb-2"><input type="text" class="form-control" id="resTitle"
+                            <div class="col-md-6 mb-2"><input type="text" class="form-control" id="bibTitle"
                                     placeholder="Título" required></div>
-                            <div class="col-md-6 mb-2">
-                                <select class="form-select" id="resCat">
-                                    <option value="biblioteca">Biblioteca</option>
-                                    <option value="lectura">Lectura Recomendada</option>
-                                </select>
-                            </div>
-                            <div class="col-12 mb-2"><input type="text" class="form-control" id="resUrl"
+                            <div class="col-12 mb-2"><input type="text" class="form-control" id="bibUrl"
                                     placeholder="URL del PDF (Drive/Directo)" required></div>
-                            <div class="col-12 mb-2"><textarea class="form-control" id="resDesc"
+                            <div class="col-12 mb-2"><textarea class="form-control" id="bibDesc"
                                     placeholder="Descripción" rows="2"></textarea></div>
                         </div>
-                        <button type="submit" class="btn btn-success">Guardar Recurso</button>
+                        <button type="submit" class="btn btn-success">Guardar en Biblioteca</button>
                     </form>
                 </div>
                 <hr>
-                <h5>Recursos Existentes</h5>
-                <div id="recursosList" class="list-group"></div>
+                <h5>Biblioteca Existente</h5>
+                <div id="bibliotecaList" class="list-group"></div>
+            </div>
+
+            <!-- LECTURAS -->
+            <div class="tab-pane fade" id="lecturas">
+                <div class="card p-4 mb-4">
+                    <h5>Nueva Lectura Recomendada</h5>
+                    <form id="lecturaForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-2"><input type="text" class="form-control" id="lecTitle"
+                                    placeholder="Título" required></div>
+                            <div class="col-12 mb-2"><input type="text" class="form-control" id="lecUrl"
+                                    placeholder="URL del PDF (Drive/Directo)" required></div>
+                            <div class="col-12 mb-2"><textarea class="form-control" id="lecDesc"
+                                    placeholder="Descripción" rows="2"></textarea></div>
+                        </div>
+                        <button type="submit" class="btn btn-success">Guardar Lectura</button>
+                    </form>
+                </div>
+                <hr>
+                <h5>Lecturas Existentes</h5>
+                <div id="lecturasList" class="list-group"></div>
             </div>
         </div>
     </div>
@@ -101,40 +123,58 @@
             window.location.href = 'login.html';
         }
 
-        // Cargar datos
+        // --- ACTIVIDADES ---
+        let activitiesData = [];
+
         async function loadActivities() {
             const res = await fetch('../backend/api.php?type=activities');
-            const data = await res.json();
+            activitiesData = await res.json();
             const list = document.getElementById('actividadesList');
-            list.innerHTML = data.map(a => `
+            list.innerHTML = activitiesData.map(a => `
                 <div class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                         <strong>${a.title}</strong> <small class="text-muted">${a.date_event}</small><br>
                         ${a.description.substring(0, 50)}...
                     </div>
-                    <button class="btn btn-sm btn-danger" onclick="deleteItem('activities', ${a.id})">Eliminar</button>
-                </div>
-            `).join('');
-        }
-
-        async function loadResources() {
-            const res = await fetch('../backend/api.php?type=resources');
-            const data = await res.json();
-            const list = document.getElementById('recursosList');
-            list.innerHTML = data.map(r => `
-                <div class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="badge bg-secondary">${r.category}</span> <strong>${r.title}</strong><br>
-                        <small><a href="${r.file_url}" target="_blank">Ver Archivo</a></small>
+                        <button class="btn btn-sm btn-warning me-2" onclick="editActivity(${a.id})">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteItem('activities', ${a.id})">Eliminar</button>
                     </div>
-                    <button class="btn btn-sm btn-danger" onclick="deleteItem('resources', ${r.id})">Eliminar</button>
                 </div>
             `).join('');
         }
 
-        // Guardar
+        function editActivity(id) {
+            const act = activitiesData.find(a => a.id == id);
+            if (!act) return;
+
+            document.getElementById('actId').value = act.id;
+            document.getElementById('actTitle').value = act.title;
+            document.getElementById('actDate').value = act.date_event;
+            document.getElementById('actPlace').value = act.location;
+            document.getElementById('actMediaType').value = act.media_type;
+            document.getElementById('actMediaUrl').value = act.media_url;
+            document.getElementById('actDesc').value = act.description;
+
+            document.getElementById('btnSaveAct').textContent = 'Actualizar Actividad';
+            document.getElementById('btnSaveAct').classList.remove('btn-success');
+            document.getElementById('btnSaveAct').classList.add('btn-warning');
+            document.getElementById('btnCancelAct').style.display = 'inline-block';
+            window.scrollTo(0, 0);
+        }
+
+        function cancelEditAct() {
+            document.getElementById('actividadForm').reset();
+            document.getElementById('actId').value = '';
+            document.getElementById('btnSaveAct').textContent = 'Guardar Actividad';
+            document.getElementById('btnSaveAct').classList.add('btn-success');
+            document.getElementById('btnSaveAct').classList.remove('btn-warning');
+            document.getElementById('btnCancelAct').style.display = 'none';
+        }
+
         document.getElementById('actividadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const id = document.getElementById('actId').value;
             const data = {
                 title: document.getElementById('actTitle').value,
                 description: document.getElementById('actDesc').value,
@@ -143,41 +183,85 @@
                 media_type: document.getElementById('actMediaType').value,
                 media_url: document.getElementById('actMediaUrl').value
             };
-            await fetch('../backend/api.php?type=activities', {
-                method: 'POST',
-                body: JSON.stringify(data)
-            });
-            e.target.reset();
+
+            if (id) {
+                // UPDATE
+                data.id = id;
+                await fetch('../backend/api.php?type=activities', {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // CREATE
+                await fetch('../backend/api.php?type=activities', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+            }
+            cancelEditAct();
             loadActivities();
         });
 
-        document.getElementById('recursoForm').addEventListener('submit', async (e) => {
+        // --- RECURSOS (BIBLIOTECA & LECTURAS) ---
+        async function loadResources(category, listId) {
+            const res = await fetch(`../backend/api.php?type=resources&category=${category}`);
+            const data = await res.json();
+            const list = document.getElementById(listId);
+            list.innerHTML = data.map(r => `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${r.title}</strong><br>
+                        <small><a href="${r.file_url}" target="_blank">Ver Archivo</a></small>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="deleteItem('resources', ${r.id})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('bibliotecaForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = {
-                title: document.getElementById('resTitle').value,
-                description: document.getElementById('resDesc').value,
-                category: document.getElementById('resCat').value,
-                file_url: document.getElementById('resUrl').value
+                title: document.getElementById('bibTitle').value,
+                description: document.getElementById('bibDesc').value,
+                category: 'biblioteca',
+                file_url: document.getElementById('bibUrl').value
             };
-            await fetch('../backend/api.php?type=resources', {
-                method: 'POST',
-                body: JSON.stringify(data)
-            });
+            await fetch('../backend/api.php?type=resources', { method: 'POST', body: JSON.stringify(data) });
             e.target.reset();
-            loadResources();
+            loadResources('biblioteca', 'bibliotecaList');
         });
 
+        document.getElementById('lecturaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('lecTitle').value,
+                description: document.getElementById('lecDesc').value,
+                category: 'lectura',
+                file_url: document.getElementById('lecUrl').value
+            };
+            await fetch('../backend/api.php?type=resources', { method: 'POST', body: JSON.stringify(data) });
+            e.target.reset();
+            loadResources('lectura', 'lecturasList');
+        });
+
+        // --- GENERAL ---
         async function deleteItem(type, id) {
             if (confirm('¿Seguro que deseas eliminar esto?')) {
                 await fetch(`../backend/api.php?type=${type}&id=${id}`, { method: 'DELETE' });
-                if (type === 'activities') loadActivities(); else loadResources();
+                if (type === 'activities') loadActivities();
+                else {
+                    loadResources('biblioteca', 'bibliotecaList');
+                    loadResources('lectura', 'lecturasList');
+                }
             }
         }
 
         // Init
         loadActivities();
-        loadResources();
+        loadResources('biblioteca', 'bibliotecaList');
+        loadResources('lectura', 'lecturasList');
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
