@@ -1,0 +1,10 @@
+# Ignorar configuración con contraseñas
+backend/config.php
+backend/create_admin.php
+
+# Ignorar archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar carpeta de dependencias si se usara composer (futuro)
+vendor/

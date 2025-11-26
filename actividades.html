@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Actividades | Escuela de Logística</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark custom-navbar fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">
+        <img src="img/logos/Academiav1.png" alt="Academia de Logística" height="40">
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html">Inicio</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="noticias.html">Noticias</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="actividades.html">Actividades</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="principiosDropdown" role="button" data-bs-toggle="dropdown"
+              aria-expanded="false">
+              Plataformas y Recursos
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="principiosDropdown">
+              <li><a class="dropdown-item" href="plataformas_y_recursos/principios_logistica.html">Principios
+                  Logistica</a></li>
+              <li><a class="dropdown-item" href="plataformas_y_recursos/plataformas.html">Plataformas</a></li>
+              <li><a class="dropdown-item" href="plataformas_y_recursos/biblioteca.html">Biblioteca</a></li>
+              <li><a class="dropdown-item" href="plataformas_y_recursos/lecturas.html">Lecturas recomendadas</a></li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="comex.html">Mesa Comex</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div style="margin-top:80px;"></div>
+
+  <div class="container py-5">
+    <h1 class="mb-4 text-center" style="color:#d32f2f;">Actividades</h1>
+    <div id="actividades-lista"></div>
+  </div>
+
+  <!-- PapaParse para CSV con comillas -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJfjsqWOqE-7CKrPmVlUfYyHFRhxMXG59qCZWN2PaDnAibAN7_qTvy9dMMlTekj4dfKqoVuLBbs1mr/pub?gid=0&single=true&output=csv';
+
+    // Cargar actividades desde la API
+    fetch('backend/api.php?type=activities')
+      .then(response => response.json())
+      .then(actividades => {
+        const cont = document.getElementById('actividades-lista');
+
+        cont.innerHTML = actividades.map(act => {
+          let mediaHtml = '';
+          if (act.media_url && act.media_url !== 'none') {
+            let mediaUrl = act.media_url;
+
+            // Procesar URL de Drive si es necesario
+            let driveMatch = mediaUrl.match(/\/d\/([\w-]+)(?:\/|$)/) || mediaUrl.match(/id=([\w-]+)/);
+            if (driveMatch) mediaUrl = `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+
+            if (act.media_type === 'youtube' || /youtu(be)?\.([a-z]+)/.test(mediaUrl)) {
+              let id = '';
+              const ytMatch = mediaUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+              if (ytMatch) id = ytMatch[1];
+              if (id) mediaHtml = `<div class='mb-2'><iframe width='100%' height='315' src='https://www.youtube.com/embed/${id}' frameborder='0' allowfullscreen></iframe></div>`;
+              else mediaHtml = `<a href='${mediaUrl}' target='_blank'>Ver video</a>`;
+            } else if (act.media_type === 'image' || /(jpg|jpeg|png|webp|gif)$/i.test(mediaUrl)) {
+              mediaHtml = `<div class='mb-2'><img src='${mediaUrl}' alt='media' style='max-width:100%;max-height:320px;border-radius:8px;'></div>`;
+            } else {
+              mediaHtml = `<a href='${mediaUrl}' target='_blank'>Ver recurso</a>`;
+            }
+          }
+
+          return `
+          <div class="row align-items-center py-4 mb-4" style="background:#fff3f3; border-radius:18px; border:2px solid #d32f2f;">
+            <div class="col-md-6 px-4 order-md-1 order-2 text-md-start text-center">
+              <h2 style="color:#d32f2f;">${act.title}</h2>
+              <p style="color:#b71c1c; font-size:1.1rem; text-align:justify;">${act.description}</p>
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <span class="badge bg-danger">Actividad</span>
+                <span class="text-muted" style="font-size:1rem;"><b>Fecha:</b> ${act.date_event}</span>
+                <span class="text-muted" style="font-size:1rem;"><b>Lugar:</b> ${act.location}</span>
+              </div>
+            </div>
+            <div class="col-md-6 px-4 order-md-2 order-1 text-center">
+              ${mediaHtml}
+            </div>
+          </div>
+          `;
+        }).join('');
+      })
+      .catch(error => console.error('Error cargando actividades:', error));
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- FOOTER -->
+  </div>
+  <footer class="footer-custom text-white text-center py-4 mt-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-12 col-md-6 mb-2 mb-md-0 text-md-start">
+          <small>&copy; 2025 Academia de Logística. Todos los derechos reservados.</small>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+          <div class="footer-social">
+            <a class="footer-link" href="https://www.instagram.com/logistica4.comex/" target="_blank"
+              rel="noopener noreferrer" aria-label="Instagram oficial">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+              </svg>
+              <span class="header-contact-text">@logistica4.comex</span>
+            </a>
+            <a class="footer-link" href="mailto:logistica.comex4@gmail.com" aria-label="Enviar correo a contacto">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M4 4h16v16H4z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <span class="header-contact-text">logistica.comex4@gmail.com</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin | Escuela de Logística</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-danger">
+        <div class="container">
+            <a class="navbar-brand" href="#">Panel de Administración</a>
+            <button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="actividades-tab" data-bs-toggle="tab" data-bs-target="#actividades"
+                    type="button">Actividades</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="recursos-tab" data-bs-toggle="tab" data-bs-target="#recursos"
+                    type="button">Biblioteca / Lecturas</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <!-- ACTIVIDADES -->
+            <div class="tab-pane fade show active" id="actividades">
+                <div class="card p-4 mb-4">
+                    <h5>Nueva Actividad</h5>
+                    <form id="actividadForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-2"><input type="text" class="form-control" id="actTitle"
+                                    placeholder="Título" required></div>
+                            <div class="col-md-6 mb-2"><input type="date" class="form-control" id="actDate" required>
+                            </div>
+                            <div class="col-md-6 mb-2"><input type="text" class="form-control" id="actPlace"
+                                    placeholder="Lugar" required></div>
+                            <div class="col-md-6 mb-2">
+                                <select class="form-select" id="actMediaType">
+                                    <option value="none">Sin Media</option>
+                                    <option value="image">Imagen (URL)</option>
+                                    <option value="youtube">YouTube (URL)</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-2"><input type="text" class="form-control" id="actMediaUrl"
+                                    placeholder="URL de Imagen o Video"></div>
+                            <div class="col-12 mb-2"><textarea class="form-control" id="actDesc"
+                                    placeholder="Descripción" rows="3" required></textarea></div>
+                        </div>
+                        <button type="submit" class="btn btn-success">Guardar Actividad</button>
+                    </form>
+                </div>
+                <hr>
+                <h5>Actividades Existentes</h5>
+                <div id="actividadesList" class="list-group"></div>
+            </div>
+
+            <!-- RECURSOS -->
+            <div class="tab-pane fade" id="recursos">
+                <div class="card p-4 mb-4">
+                    <h5>Nuevo Recurso</h5>
+                    <form id="recursoForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-2"><input type="text" class="form-control" id="resTitle"
+                                    placeholder="Título" required></div>
+                            <div class="col-md-6 mb-2">
+                                <select class="form-select" id="resCat">
+                                    <option value="biblioteca">Biblioteca</option>
+                                    <option value="lectura">Lectura Recomendada</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-2"><input type="text" class="form-control" id="resUrl"
+                                    placeholder="URL del PDF (Drive/Directo)" required></div>
+                            <div class="col-12 mb-2"><textarea class="form-control" id="resDesc"
+                                    placeholder="Descripción" rows="2"></textarea></div>
+                        </div>
+                        <button type="submit" class="btn btn-success">Guardar Recurso</button>
+                    </form>
+                </div>
+                <hr>
+                <h5>Recursos Existentes</h5>
+                <div id="recursosList" class="list-group"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar sesión
+        fetch('../backend/auth.php?action=check')
+            .then(r => r.json())
+            .then(d => { if (!d.logged_in) window.location.href = 'login.html'; });
+
+        async function logout() {
+            await fetch('../backend/auth.php?action=logout');
+            window.location.href = 'login.html';
+        }
+
+        // Cargar datos
+        async function loadActivities() {
+            const res = await fetch('../backend/api.php?type=activities');
+            const data = await res.json();
+            const list = document.getElementById('actividadesList');
+            list.innerHTML = data.map(a => `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${a.title}</strong> <small class="text-muted">${a.date_event}</small><br>
+                        ${a.description.substring(0, 50)}...
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="deleteItem('activities', ${a.id})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        async function loadResources() {
+            const res = await fetch('../backend/api.php?type=resources');
+            const data = await res.json();
+            const list = document.getElementById('recursosList');
+            list.innerHTML = data.map(r => `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-secondary">${r.category}</span> <strong>${r.title}</strong><br>
+                        <small><a href="${r.file_url}" target="_blank">Ver Archivo</a></small>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="deleteItem('resources', ${r.id})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        // Guardar
+        document.getElementById('actividadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('actTitle').value,
+                description: document.getElementById('actDesc').value,
+                date_event: document.getElementById('actDate').value,
+                location: document.getElementById('actPlace').value,
+                media_type: document.getElementById('actMediaType').value,
+                media_url: document.getElementById('actMediaUrl').value
+            };
+            await fetch('../backend/api.php?type=activities', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            e.target.reset();
+            loadActivities();
+        });
+
+        document.getElementById('recursoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('resTitle').value,
+                description: document.getElementById('resDesc').value,
+                category: document.getElementById('resCat').value,
+                file_url: document.getElementById('resUrl').value
+            };
+            await fetch('../backend/api.php?type=resources', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            e.target.reset();
+            loadResources();
+        });
+
+        async function deleteItem(type, id) {
+            if (confirm('¿Seguro que deseas eliminar esto?')) {
+                await fetch(`../backend/api.php?type=${type}&id=${id}`, { method: 'DELETE' });
+                if (type === 'activities') loadActivities(); else loadResources();
+            }
+        }
+
+        // Init
+        loadActivities();
+        loadResources();
+    </script>
+</body>
+
+</html>
