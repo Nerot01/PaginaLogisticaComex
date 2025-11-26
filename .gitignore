@@ -1,6 +1,7 @@
 # Ignorar configuración con contraseñas
 backend/config.php
 backend/create_admin.php
+backend/reset_password.php
 
 # Ignorar archivos del sistema
 .DS_Store
