@@ -78,38 +78,6 @@ if ($method === 'GET') {
             $stmt->execute([$title, $description, $date_event, $location, $media_url, $media_type, $id]);
         } else {
             // INSERT
-            $sql = "INSERT INTO activities (title, description, date_event, location, media_url, media_type) VALUES (?, ?, ?, ?, ?, ?)";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$title, $description, $date_event, $location, $media_url, $media_type]);
-        }
-        echo json_encode(['success' => true]);
-
-    } elseif ($type === 'resources') {
-        // Logic for creating/updating resources via POST
-        $title = $_POST['title'] ?? '';
-        $description = $_POST['description'] ?? '';
-        $url = $_POST['url'] ?? '';
-        $category = $_POST['category'] ?? '';
-        $id = $_POST['id'] ?? null;
-
-        if ($id) {
-            // UPDATE resource
-            $sql = "UPDATE resources SET title=?, description=?, url=?, category=? WHERE id=?";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$title, $description, $url, $category, $id]);
-        } else {
-            // INSERT resource
-            $sql = "INSERT INTO resources (title, description, url, category) VALUES (?, ?, ?, ?)";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$title, $description, $url, $category]);
-        }
-        echo json_encode(['success' => true]);
-    }
-} elseif ($method === 'DELETE') {
-    checkAuth();
-    $id = $_GET['id'] ?? null; // Assuming ID comes from query param for DELETE
-
-    if (!$id) {
         http_response_code(400);
         echo json_encode(['error' => 'ID no proporcionado']);
         exit;
