@@ -12,6 +12,47 @@ function checkAuth()
         echo json_encode(['error' => 'No autorizado']);
         exit;
     }
+}
+
+$method = $_SERVER['REQUEST_METHOD'];
+$type = $_GET['type'] ?? ''; // 'activities', 'resources'
+
+if ($method === 'GET') {
+    if ($type === 'activities') {
+        $page = isset($_GET['page']) ? (int) $_GET['page'] : 0;
+        $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 0;
+
+        if ($page > 0 && $limit > 0) {
+            $offset = ($page - 1) * $limit;
+
+            // Contar total
+            $countStmt = $pdo->query("SELECT COUNT(*) FROM activities");
+            $total = $countStmt->fetchColumn();
+            $totalPages = ceil($total / $limit);
+
+            // Obtener datos paginados
+            $stmt = $pdo->prepare("SELECT * FROM activities ORDER BY date_event DESC, id DESC LIMIT :limit OFFSET :offset");
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+
+            echo json_encode([
+                'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                'total' => $total,
+                'pages' => $totalPages,
+                'current_page' => $page
+            ]);
+        } else {
+            // Sin paginación (para admin o compatibilidad)
+            $stmt = $pdo->query("SELECT * FROM activities ORDER BY date_event DESC, id DESC");
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+    } elseif ($type === 'resources') {
+        $category = $_GET['category'] ?? '';
+        $sql = "SELECT * FROM resources";
+        if ($category) {
+            $sql .= " WHERE category = ?";
+            $stmt = $pdo->prepare($sql);
             $stmt->execute([$category]);
         } else {
             $stmt = $pdo->query($sql);
