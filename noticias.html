@@ -139,20 +139,21 @@
       </div>
     </div>
   </div>
-  function cargarNoticias() {
-  const renderNews = (containerId, url, title) => {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+  <script>
+    function cargarNoticias() {
+      const renderNews = (containerId, url, title) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-  container.innerHTML = `<div class="w-100 text-center py-4 text-muted">Cargando noticias de ${title}...</div>`;
+        container.innerHTML = `<div class="w-100 text-center py-4 text-muted">Cargando noticias de ${title}...</div>`;
 
-  fetch(`https://api.rss2json.com/v1/api.json?rss_url=${url}`)
-  .then(res => res.json())
-  .then(data => {
-  if (data.items && data.items.length > 0) {
-  container.innerHTML = '';
-  data.items.slice(0, 10).forEach(item => {
-  let html = `
+        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${url}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.items && data.items.length > 0) {
+              container.innerHTML = '';
+              data.items.slice(0, 10).forEach(item => {
+                let html = `
   <div class="d-flex align-items-start mb-3 p-3"
     style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; transition:all 0.2s;">
     ${item.thumbnail ? `<img src="${item.thumbnail}" alt="Img"
@@ -165,28 +166,27 @@
     </div>
   </div>
   `;
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  // Hover effect via JS or CSS class better, but inline for quick fix
-  div.firstElementChild.onmouseover = function() { this.style.borderColor = '#1a237e'; this.style.boxShadow = '0 2px 8px
-  rgba(0,0,0,0.05)'; };
-  div.firstElementChild.onmouseout = function() { this.style.borderColor = '#e0e0e0'; this.style.boxShadow = 'none'; };
-  container.appendChild(div);
-  });
-  } else {
-  container.innerHTML = '<p class="text-muted text-center">No se pudieron cargar noticias.</p>';
-  }
-  })
-  .catch(() => {
-  container.innerHTML = '<p class="text-muted text-center">Error al cargar noticias.</p>';
-  });
-  };
+                const div = document.createElement('div');
+                div.innerHTML = html;
+                // Hover effect via JS or CSS class better, but inline for quick fix
+                div.firstElementChild.onmouseover = function () { this.style.borderColor = '#1a237e'; this.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'; };
+                div.firstElementChild.onmouseout = function () { this.style.borderColor = '#e0e0e0'; this.style.boxShadow = 'none'; };
+                container.appendChild(div);
+              });
+            } else {
+              container.innerHTML = '<p class="text-muted text-center">No se pudieron cargar noticias.</p>';
+            }
+          })
+          .catch(() => {
+            container.innerHTML = '<p class="text-muted text-center">Error al cargar noticias.</p>';
+          });
+      };
 
-  renderNews('noticiasComex', 'https://portalportuario.cl/category/comercio-exterior/feed', 'Mesa Comex');
-  renderNews('noticiasPortuarias', 'https://portalportuario.cl/feed/', 'Portal Portuario');
-  renderNews('noticiasActualidad', 'https://logistica.mtt.cl/feed', 'Logística Actualidad');
-  }
-  window.addEventListener('DOMContentLoaded', cargarNoticias);
+      renderNews('noticiasComex', 'https://portalportuario.cl/category/comercio-exterior/feed', 'Mesa Comex');
+      renderNews('noticiasPortuarias', 'https://portalportuario.cl/feed/', 'Portal Portuario');
+      renderNews('noticiasActualidad', 'https://logistica.mtt.cl/feed', 'Logística Actualidad');
+    }
+    window.addEventListener('DOMContentLoaded', cargarNoticias);
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 
