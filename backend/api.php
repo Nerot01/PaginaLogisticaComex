@@ -12,21 +12,6 @@ function checkAuth()
         echo json_encode(['error' => 'No autorizado']);
         exit;
     }
-}
-
-$method = $_SERVER['REQUEST_METHOD'];
-$type = $_GET['type'] ?? ''; // 'activities', 'resources'
-
-if ($method === 'GET') {
-    if ($type === 'activities') {
-        $stmt = $pdo->query("SELECT * FROM activities ORDER BY date_event DESC");
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-    } elseif ($type === 'resources') {
-        $category = $_GET['category'] ?? '';
-        $sql = "SELECT * FROM resources";
-        if ($category) {
-            $sql .= " WHERE category = ?";
-            $stmt = $pdo->prepare($sql);
             $stmt->execute([$category]);
         } else {
             $stmt = $pdo->query($sql);
