@@ -37,25 +37,37 @@
             <div class="tab-pane fade show active" id="actividades">
                 <div class="card p-4 mb-4">
                     <h5>Nueva Actividad</h5>
-                    <form id="actividadForm">
-                        <input type="hidden" id="actId"> <!-- Hidden ID for editing -->
+                    <form id="actividadForm" enctype="multipart/form-data">
+                        <input type="hidden" id="actId" name="id"> <!-- Hidden ID for editing -->
                         <div class="row">
                             <div class="col-md-6 mb-2"><input type="text" class="form-control" id="actTitle"
-                                    placeholder="Título" required></div>
-                            <div class="col-md-6 mb-2"><input type="date" class="form-control" id="actDate" required>
+                                    name="title" placeholder="Título" required></div>
+                            <div class="col-md-6 mb-2"><input type="date" class="form-control" id="actDate"
+                                    name="date_event" required>
                             </div>
                             <div class="col-md-6 mb-2"><input type="text" class="form-control" id="actPlace"
-                                    placeholder="Lugar" required></div>
+                                    name="location" placeholder="Lugar" required></div>
                             <div class="col-md-6 mb-2">
-                                <select class="form-select" id="actMediaType">
+                                <select class="form-select" id="actMediaType" name="media_type"
+                                    onchange="toggleMediaInput()">
                                     <option value="none">Sin Media</option>
-                                    <option value="image">Imagen (URL)</option>
+                                    <option value="image">Subir Imagen</option>
                                     <option value="youtube">YouTube (URL)</option>
                                 </select>
                             </div>
-                            <div class="col-12 mb-2"><input type="text" class="form-control" id="actMediaUrl"
-                                    placeholder="URL de Imagen o Video"></div>
-                            <div class="col-12 mb-2"><textarea class="form-control" id="actDesc"
+                            <!-- Input para URL (YouTube) -->
+                            <div class="col-12 mb-2" id="divMediaUrl" style="display:none;">
+                                <input type="text" class="form-control" id="actMediaUrl" name="media_url"
+                                    placeholder="URL del Video (YouTube)">
+                            </div>
+                            <!-- Input para Archivo (Imagen) -->
+                            <div class="col-12 mb-2" id="divMediaFile" style="display:none;">
+                                <input type="file" class="form-control" id="actMediaFile" name="media_file"
+                                    accept="image/*">
+                                <small class="text-muted" id="currentFileMsg"></small>
+                            </div>
+
+                            <div class="col-12 mb-2"><textarea class="form-control" id="actDesc" name="description"
                                     placeholder="Descripción" rows="3" required></textarea></div>
                         </div>
                         <button type="submit" class="btn btn-success" id="btnSaveAct">Guardar Actividad</button>
@@ -126,6 +138,12 @@
         // --- ACTIVIDADES ---
         let activitiesData = [];
 
+        function toggleMediaInput() {
+            const type = document.getElementById('actMediaType').value;
+            document.getElementById('divMediaUrl').style.display = (type === 'youtube') ? 'block' : 'none';
+            document.getElementById('divMediaFile').style.display = (type === 'image') ? 'block' : 'none';
+        }
+
         async function loadActivities() {
             const res = await fetch('../backend/api.php?type=activities');
             activitiesData = await res.json();
@@ -153,8 +171,18 @@
             document.getElementById('actDate').value = act.date_event;
             document.getElementById('actPlace').value = act.location;
             document.getElementById('actMediaType').value = act.media_type;
-            document.getElementById('actMediaUrl').value = act.media_url;
             document.getElementById('actDesc').value = act.description;
+
+            // Configurar inputs según tipo
+            toggleMediaInput();
+            if (act.media_type === 'youtube') {
+                document.getElementById('actMediaUrl').value = act.media_url;
+            } else if (act.media_type === 'image') {
+                document.getElementById('currentFileMsg').textContent = `Imagen actual: ${act.media_url}`;
+                // Guardamos la URL actual en el campo oculto o lo manejamos en el backend si no se envía archivo nuevo
+                // Para simplificar, usaremos el input de URL para guardar la ruta actual también, aunque esté oculto
+                document.getElementById('actMediaUrl').value = act.media_url;
+            }
 
             document.getElementById('btnSaveAct').textContent = 'Actualizar Actividad';
             document.getElementById('btnSaveAct').classList.remove('btn-success');
@@ -170,34 +198,24 @@
             document.getElementById('btnSaveAct').classList.add('btn-success');
             document.getElementById('btnSaveAct').classList.remove('btn-warning');
             document.getElementById('btnCancelAct').style.display = 'none';
+            document.getElementById('currentFileMsg').textContent = '';
+            toggleMediaInput();
         }
 
         document.getElementById('actividadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('actId').value;
-            const data = {
-                title: document.getElementById('actTitle').value,
-                description: document.getElementById('actDesc').value,
-                date_event: document.getElementById('actDate').value,
-                location: document.getElementById('actPlace').value,
-                media_type: document.getElementById('actMediaType').value,
-                media_url: document.getElementById('actMediaUrl').value
-            };
 
-            if (id) {
-                // UPDATE
-                data.id = id;
-                await fetch('../backend/api.php?type=activities', {
-                    method: 'PUT',
-                    body: JSON.stringify(data)
-                });
-            } else {
-                // CREATE
-                await fetch('../backend/api.php?type=activities', {
-                    method: 'POST',
-                    body: JSON.stringify(data)
-                });
-            }
+            const form = document.getElementById('actividadForm');
+            const formData = new FormData(form);
+
+            // Si es imagen y no se seleccionó archivo nuevo, asegurarnos de enviar la URL vieja si existe
+            // El backend prioriza el archivo, si no hay archivo usa media_url
+
+            await fetch('../backend/api.php?type=activities', {
+                method: 'POST', // Usamos POST siempre para FormData
+                body: formData
+            });
+
             cancelEditAct();
             loadActivities();
         });

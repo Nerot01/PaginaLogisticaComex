@@ -9,6 +9,17 @@ function checkAuth()
 {
     if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
+<?php
+session_start();
+require 'db.php';
+
+header('Content-Type: application/json');
+
+// Funciones auxiliares
+function checkAuth()
+{
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
         echo json_encode(['error' => 'No autorizado']);
         exit;
     }
@@ -35,52 +46,75 @@ if ($method === 'GET') {
     }
 } elseif ($method === 'POST') {
     checkAuth();
-    $data = json_decode(file_get_contents('php://input'), true);
+    $input = json_decode(file_get_contents('php://input'), true);
 
     if ($type === 'activities') {
-        $sql = "INSERT INTO activities (title, description, date_event, location, media_url, media_type) VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            $data['title'],
-            $data['description'],
-            $data['date_event'],
-            $data['location'],
-            $data['media_url'],
-            $data['media_type']
-        ]);
+        $title = $_POST['title'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $date_event = $_POST['date_event'] ?? '';
+        $location = $_POST['location'] ?? '';
+        $media_type = $_POST['media_type'] ?? null;
+        $media_url = null;
+
+        // Procesar subida de imagen
+        if ($media_type === 'image' && isset($_FILES['media_file']) && $_FILES['media_file']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = '../uploads/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+            
+            $fileName = uniqid() . '_' . basename($_FILES['media_file']['name']);
+            $targetPath = $uploadDir . $fileName;
+            
+            if (move_uploaded_file($_FILES['media_file']['tmp_name'], $targetPath)) {
+                $media_url = 'uploads/' . $fileName; // Ruta relativa para guardar en BD
+            }
+        }
+
+        $id = $_POST['id'] ?? null;
+
+        if ($id) {
+            // UPDATE via POST
+            $sql = "UPDATE activities SET title=?, description=?, date_event=?, location=?, media_url=?, media_type=? WHERE id=?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$title, $description, $date_event, $location, $media_url, $media_type, $id]);
+        } else {
+            // INSERT
+            $sql = "INSERT INTO activities (title, description, date_event, location, media_url, media_type) VALUES (?, ?, ?, ?, ?, ?)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$title, $description, $date_event, $location, $media_url, $media_type]);
+        }
         echo json_encode(['success' => true]);
+
     } elseif ($type === 'resources') {
-        $sql = "INSERT INTO resources (title, description, file_url, category) VALUES (?, ?, ?, ?)";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            $data['title'],
-            $data['description'],
-            $data['file_url'],
-            $data['category']
-        ]);
-        echo json_encode(['success' => true]);
-    }
-} elseif ($method === 'PUT') {
-    checkAuth();
-    $data = json_decode(file_get_contents('php://input'), true);
+        // Logic for creating/updating resources via POST
+        $title = $_POST['title'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $url = $_POST['url'] ?? '';
+        $category = $_POST['category'] ?? '';
+        $id = $_POST['id'] ?? null;
 
-    if ($type === 'activities') {
-        $sql = "UPDATE activities SET title=?, description=?, date_event=?, location=?, media_url=?, media_type=? WHERE id=?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            $data['title'],
-            $data['description'],
-            $data['date_event'],
-            $data['location'],
-            $data['media_url'],
-            $data['media_type'],
-            $data['id']
-        ]);
+        if ($id) {
+            // UPDATE resource
+            $sql = "UPDATE resources SET title=?, description=?, url=?, category=? WHERE id=?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$title, $description, $url, $category, $id]);
+        } else {
+            // INSERT resource
+            $sql = "INSERT INTO resources (title, description, url, category) VALUES (?, ?, ?, ?)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$title, $description, $url, $category]);
+        }
         echo json_encode(['success' => true]);
     }
 } elseif ($method === 'DELETE') {
     checkAuth();
-    $id = $_GET['id'] ?? 0;
+    $id = $_GET['id'] ?? null; // Assuming ID comes from query param for DELETE
+
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'ID no proporcionado']);
+        exit;
+    }
+
     if ($type === 'activities') {
         $stmt = $pdo->prepare("DELETE FROM activities WHERE id = ?");
         $stmt->execute([$id]);
