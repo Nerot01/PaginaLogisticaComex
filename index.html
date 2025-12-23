@@ -271,7 +271,34 @@
       handleNavbarTransparency(viewId);
     }
   </script>
+  <!-- Modal Comunidad -->
+  <div class="modal fade" id="modalComunidad" tabindex="-1" aria-labelledby="modalComunidadLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center">
+        <div class="modal-header border-0">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pb-5">
+          <h2 class="modal-title mb-3" id="modalComunidadLabel" style="color:#1a237e; font-weight:bold;">¡Conócenos!
+          </h2>
+          <p class="mb-4" style="font-size:1.1rem;">Únete a nuestra comunidad de logística y matriculate con nosotros.
+          </p>
+          <a href="https://unete.logisticacomex.com/" class="btn btn-primary btn-lg px-5 rounded-pill"
+            style="background-color: #0d47a1; border: none;">Unete a nosotros</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Mostrar el modal automáticamente al cargar la página
+      // Se puede agregar lógica para usar localStorage si se quiere mostrar solo una vez
+      var myModal = new bootstrap.Modal(document.getElementById('modalComunidad'));
+      myModal.show();
+    });
+  </script>
 
 </body>
 
